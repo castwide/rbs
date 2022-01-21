@@ -1,8 +1,12 @@
 #!/usr/bin/env ruby
 
-DIRS = {
-  "stdlib/pathname" => ["--docs-from=ext/pathname"]
-}
+DIRS = {}
+
+def add_lib(lib, *opts)
+  DIRS[lib] = opts
+end
+
+add_lib("stdlib/abbrev", "--docs-from=lib/abbrev.rb")
 
 # Usage:
 #   bin/update_all_docs stdlib/pathname

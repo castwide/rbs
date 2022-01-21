@@ -1,3 +1,4 @@
+# <!-- lib/abbrev.rb -->
 # Calculates the set of unambiguous abbreviations for a given set of strings.
 #
 #     require 'abbrev'
@@ -34,6 +35,7 @@
 #       "w"       => "winter" }
 #
 module Abbrev
+  # <!-- lib/abbrev.rb -->
   # Given a set of strings, calculate the set of unambiguous abbreviations for
   # those strings, and return a hash where the keys are all the possible
   # abbreviations and the values are the full strings.
@@ -56,5 +58,42 @@ module Abbrev
   #
   #     Abbrev.abbrev(%w{car box cone}, 'ca')
   #     #=> {"car"=>"car", "ca"=>"car"}
-  def self?.abbrev: (Array[String], ?String | Regexp | nil) -> Hash[String, String]
+  #
+  # <!--
+  #     abbrev(words, pattern = nil)
+  # -->
+  %a{doc:module_function}
+  def self.abbrev: (Array[String], ?String | Regexp | nil) -> Hash[String, String]
+
+  private
+
+  # <!-- lib/abbrev.rb -->
+  # Given a set of strings, calculate the set of unambiguous abbreviations for
+  # those strings, and return a hash where the keys are all the possible
+  # abbreviations and the values are the full strings.
+  #
+  # Thus, given `words` is "car" and "cone", the keys pointing to "car" would be
+  # "ca" and "car", while those pointing to "cone" would be "co", "con", and
+  # "cone".
+  #
+  #     require 'abbrev'
+  #
+  #     Abbrev.abbrev(%w{ car cone })
+  #     #=> {"ca"=>"car", "con"=>"cone", "co"=>"cone", "car"=>"car", "cone"=>"cone"}
+  #
+  # The optional `pattern` parameter is a pattern or a string. Only input strings
+  # that match the pattern or start with the string are included in the output
+  # hash.
+  #
+  #     Abbrev.abbrev(%w{car box cone crab}, /b/)
+  #     #=> {"box"=>"box", "bo"=>"box", "b"=>"box", "crab" => "crab"}
+  #
+  #     Abbrev.abbrev(%w{car box cone}, 'ca')
+  #     #=> {"car"=>"car", "ca"=>"car"}
+  #
+  # <!--
+  #     abbrev(words, pattern = nil)
+  # -->
+  %a{doc:module_function}
+  def abbrev: (Array[String], ?String | Regexp | nil) -> Hash[String, String]
 end
