@@ -1,3 +1,4 @@
+# <!-- ext/bigdecimal/lib/bigdecimal/math.rb -->
 # Provides mathematical functions.
 #
 # Example:
@@ -10,22 +11,31 @@
 #     puts sin(a,100) # => 0.99999999999999999999......e0
 #
 module BigMath
+  # <!-- ext/bigdecimal/lib/bigdecimal/math.rb -->
   # Computes e (the base of natural logarithms) to the specified number of digits
   # of precision, `numeric`.
   #
   #     BigMath.E(10).to_s
   #     #=> "0.271828182845904523536028752390026306410273e1"
   #
-  def self.E: (Numeric prec) -> BigDecimal
+  # <!--
+  #     E(numeric) -> BigDecimal
+  # -->
+  def self?.E: (Numeric prec) -> BigDecimal
 
+  # <!-- ext/bigdecimal/lib/bigdecimal/math.rb -->
   # Computes the value of pi to the specified number of digits of precision,
   # `numeric`.
   #
   #     BigMath.PI(10).to_s
   #     #=> "0.3141592653589793238462643388813853786957412e1"
   #
-  def self.PI: (Numeric prec) -> BigDecimal
+  # <!--
+  #     PI(numeric) -> BigDecimal
+  # -->
+  def self?.PI: (Numeric prec) -> BigDecimal
 
+  # <!-- ext/bigdecimal/lib/bigdecimal/math.rb -->
   # Computes the arctangent of `decimal` to the specified number of digits of
   # precision, `numeric`.
   #
@@ -34,8 +44,12 @@ module BigMath
   #     BigMath.atan(BigDecimal('-1'), 16).to_s
   #     #=> "-0.785398163397448309615660845819878471907514682065e0"
   #
-  def self.atan: (BigDecimal x, Numeric prec) -> BigDecimal
+  # <!--
+  #     atan(decimal, numeric) -> BigDecimal
+  # -->
+  def self?.atan: (BigDecimal x, Numeric prec) -> BigDecimal
 
+  # <!-- ext/bigdecimal/lib/bigdecimal/math.rb -->
   # Computes the cosine of `decimal` to the specified number of digits of
   # precision, `numeric`.
   #
@@ -44,8 +58,12 @@ module BigMath
   #     BigMath.cos(BigMath.PI(4), 16).to_s
   #     #=> "-0.999999999999999999999999999999856613163740061349e0"
   #
-  def self.cos: (BigDecimal x, Numeric prec) -> BigDecimal
+  # <!--
+  #     cos(decimal, numeric) -> BigDecimal
+  # -->
+  def self?.cos: (BigDecimal x, Numeric prec) -> BigDecimal
 
+  # <!-- ext/bigdecimal/bigdecimal.c -->
   # Computes the value of e (the base of natural logarithms) raised to the power
   # of `decimal`, to the specified number of digits of precision.
   #
@@ -53,8 +71,12 @@ module BigMath
   #
   # If `decimal` is NaN, returns NaN.
   #
-  def self.exp: (BigDecimal, Numeric prec) -> BigDecimal
+  # <!--
+  #     BigMath.exp(decimal, numeric)    -> BigDecimal
+  # -->
+  def self?.exp: (BigDecimal, Numeric prec) -> BigDecimal
 
+  # <!-- ext/bigdecimal/bigdecimal.c -->
   # Computes the natural logarithm of `decimal` to the specified number of digits
   # of precision, `numeric`.
   #
@@ -64,8 +86,12 @@ module BigMath
   #
   # If `decimal` is NaN, returns NaN.
   #
-  def self.log: (BigDecimal, Numeric prec) -> BigDecimal
+  # <!--
+  #     BigMath.log(decimal, numeric)    -> BigDecimal
+  # -->
+  def self?.log: (BigDecimal, Numeric prec) -> BigDecimal
 
+  # <!-- ext/bigdecimal/lib/bigdecimal/math.rb -->
   # Computes the sine of `decimal` to the specified number of digits of precision,
   # `numeric`.
   #
@@ -74,69 +100,20 @@ module BigMath
   #     BigMath.sin(BigMath.PI(5)/4, 5).to_s
   #     #=> "0.70710678118654752440082036563292800375e0"
   #
-  def self.sin: (BigDecimal x, Numeric prec) -> BigDecimal
+  # <!--
+  #     sin(decimal, numeric) -> BigDecimal
+  # -->
+  def self?.sin: (BigDecimal x, Numeric prec) -> BigDecimal
 
+  # <!-- ext/bigdecimal/lib/bigdecimal/math.rb -->
   # Computes the square root of `decimal` to the specified number of digits of
   # precision, `numeric`.
   #
   #     BigMath.sqrt(BigDecimal('2'), 16).to_s
   #     #=> "0.1414213562373095048801688724e1"
   #
-  def self.sqrt: (BigDecimal x, Numeric prec) -> BigDecimal
-
-  private
-
-  # Computes e (the base of natural logarithms) to the specified number of digits
-  # of precision, `numeric`.
-  #
-  #     BigMath.E(10).to_s
-  #     #=> "0.271828182845904523536028752390026306410273e1"
-  #
-  def E: (Numeric prec) -> BigDecimal
-
-  # Computes the value of pi to the specified number of digits of precision,
-  # `numeric`.
-  #
-  #     BigMath.PI(10).to_s
-  #     #=> "0.3141592653589793238462643388813853786957412e1"
-  #
-  def PI: (Numeric prec) -> BigDecimal
-
-  # Computes the arctangent of `decimal` to the specified number of digits of
-  # precision, `numeric`.
-  #
-  # If `decimal` is NaN, returns NaN.
-  #
-  #     BigMath.atan(BigDecimal('-1'), 16).to_s
-  #     #=> "-0.785398163397448309615660845819878471907514682065e0"
-  #
-  def atan: (BigDecimal x, Numeric prec) -> BigDecimal
-
-  # Computes the cosine of `decimal` to the specified number of digits of
-  # precision, `numeric`.
-  #
-  # If `decimal` is Infinity or NaN, returns NaN.
-  #
-  #     BigMath.cos(BigMath.PI(4), 16).to_s
-  #     #=> "-0.999999999999999999999999999999856613163740061349e0"
-  #
-  def cos: (BigDecimal x, Numeric prec) -> BigDecimal
-
-  # Computes the sine of `decimal` to the specified number of digits of precision,
-  # `numeric`.
-  #
-  # If `decimal` is Infinity or NaN, returns NaN.
-  #
-  #     BigMath.sin(BigMath.PI(5)/4, 5).to_s
-  #     #=> "0.70710678118654752440082036563292800375e0"
-  #
-  def sin: (BigDecimal x, Numeric prec) -> BigDecimal
-
-  # Computes the square root of `decimal` to the specified number of digits of
-  # precision, `numeric`.
-  #
-  #     BigMath.sqrt(BigDecimal('2'), 16).to_s
-  #     #=> "0.1414213562373095048801688724e1"
-  #
-  def sqrt: (BigDecimal x, Numeric prec) -> BigDecimal
+  # <!--
+  #     sqrt(decimal, numeric) -> BigDecimal
+  # -->
+  def self?.sqrt: (BigDecimal x, Numeric prec) -> BigDecimal
 end
