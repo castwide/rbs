@@ -1,3 +1,4 @@
+# <!-- lib/cgi.rb -->
 # ## Overview
 #
 # The Common Gateway Interface (CGI) is a simple protocol for passing an HTTP
@@ -266,6 +267,7 @@
 #     include CGI::Util
 #     escapeHTML('Usage: foo "bar" <baz>')
 #     h('Usage: foo "bar" <baz>') # alias
+#
 class CGI
   # Create a new CGI instance.
   #
@@ -343,26 +345,41 @@ class CGI
   def initialize: (?String tag_maker) ?{ (String name, String value) -> void } -> void
                 | (Hash[Symbol, untyped] options_hash) ?{ (String name, String value) -> void } -> void
 
+  # <!-- lib/cgi/core.rb -->
+  # Return the accept character set for this CGI instance.
   attr_reader accept_charset: String
 
+  # <!-- lib/cgi/core.rb -->
   # Return the accept character set for all new CGI instances.
   #
+  # <!--
+  #     accept_charset()
+  # -->
   def self.accept_charset: () -> String
 
+  # <!-- lib/cgi/core.rb -->
   # Set the accept character set for all new CGI instances.
   #
+  # <!--
+  #     accept_charset=(accept_charset)
+  # -->
   def self.accept_charset=: (String accept_charset) -> String
 
+  # <!-- lib/cgi/core.rb -->
   # Parse an HTTP query string into a hash of key=>value pairs.
   #
   #     params = CGI.parse("query_string")
   #       # {"name1" => ["value1", "value2", ...],
   #       #  "name2" => ["value1", "value2", ...], ... }
   #
+  # <!--
+  #     parse(query)
+  # -->
   def self.parse: (String query) -> Hash[String, String | Array[String]]
 
   public
 
+  # <!-- lib/cgi/core.rb -->
   # This method is an alias for #http_header, when HTML5 tag maker is inactive.
   #
   # NOTE: use #http_header to create HTTP header blocks, this alias is only
@@ -370,8 +387,12 @@ class CGI
   #
   # Using #header with the HTML5 tag maker will create a <header> element.
   #
+  # <!--
+  #     header(options='text/html')
+  # -->
   alias header http_header
 
+  # <!-- lib/cgi/core.rb -->
   # Create an HTTP header block as a string.
   #
   # Includes the empty line that ends the header block.
@@ -482,11 +503,16 @@ class CGI
   #
   # This method does not perform charset conversion.
   #
+  # <!--
+  #     http_header(content_type_string="text/html")
+  #     http_header(headers_hash)
+  # -->
   def http_header: (?String options) -> String
                  | (?Hash[String | Symbol, untyped] header_hash) -> String
 
   def nph?: () -> boolish
 
+  # <!-- lib/cgi/core.rb -->
   # Print an HTTP header and body to $DEFAULT_OUTPUT ($>)
   #
   # `content_type_string`
@@ -548,46 +574,76 @@ class CGI
   #        #
   #        # string
   #
+  # <!--
+  #     cgi.out(content_type_string='text/html')
+  #     cgi.out(headers_hash)
+  # -->
   def out: (?String content_type_string) { () -> String } -> void
          | (Hash[String | Symbol, untyped] headers_hash) { () -> String } -> void
 
+  # <!-- lib/cgi/core.rb -->
   # Print an argument or list of arguments to the default output stream
   #
   #     cgi = CGI.new
   #     cgi.print    # default:  cgi.print == $DEFAULT_OUTPUT.print
   #
+  # <!--
+  #     print(*options)
+  # -->
   def print: (*String options) -> void
 
   private
 
+  # <!-- lib/cgi/core.rb -->
   # Synonym for $stdin.
   #
+  # <!--
+  #     stdinput()
+  # -->
   def stdinput: () -> ::IO
 
+  # <!-- lib/cgi/core.rb -->
   # Synonym for $stdout.
   #
+  # <!--
+  #     stdoutput()
+  # -->
   def stdoutput: () -> ::IO
 end
 
+# <!-- lib/cgi/core.rb -->
 # String for carriage return
+#
 CGI::CR: String
 
+# <!-- lib/cgi/core.rb -->
 # Standard internet newline sequence
+#
 CGI::EOL: String
 
+# <!-- lib/cgi/core.rb -->
 # HTTP status codes.
+#
 CGI::HTTP_STATUS: Hash[String, String]
 
+# <!-- lib/cgi/core.rb -->
 # String for linefeed
+#
 CGI::LF: String
 
+# <!-- lib/cgi/core.rb -->
 # Maximum number of request parameters when multipart
+#
 CGI::MAX_MULTIPART_COUNT: Integer
 
+# <!-- lib/cgi/core.rb -->
 # Whether processing will be required in binary vs text
+#
 CGI::NEEDS_BINMODE: bool
 
+# <!-- lib/cgi/core.rb -->
 # Path separators in different environments.
+#
 CGI::PATH_SEPARATOR: Hash[String, String]
 
 CGI::REVISION: String

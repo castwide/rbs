@@ -11,6 +11,7 @@ add_lib("stdlib/base64")
 add_lib("stdlib/benchmark")
 add_lib("stdlib/bigdecimal", "ext/bigdecimal")
 add_lib("stdlib/bigdecimal-math")
+add_lib("stdlib/cgi")
 
 # Usage:
 #   bin/update_all_docs stdlib/pathname
