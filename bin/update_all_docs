@@ -2,12 +2,13 @@
 
 DIRS = {}
 
-def add_lib(lib, *opts)
-  DIRS[lib] = opts
+def add_lib(lib, *froms)
+  DIRS[lib] = froms.map {|from| "--doc-from=#{from}" }
 end
 
-add_lib("stdlib/abbrev", "--docs-from=lib/abbrev.rb")
+add_lib("stdlib/abbrev", "lib/abbrev.rb")
 add_lib("stdlib/base64")
+add_lib("stdlib/benchmark")
 
 # Usage:
 #   bin/update_all_docs stdlib/pathname
