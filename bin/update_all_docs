@@ -9,6 +9,7 @@ end
 add_lib("stdlib/abbrev", "lib/abbrev.rb")
 add_lib("stdlib/base64")
 add_lib("stdlib/benchmark")
+add_lib("stdlib/bigdecimal", "ext/bigdecimal")
 
 # Usage:
 #   bin/update_all_docs stdlib/pathname
@@ -22,7 +23,7 @@ dirs =
   end
 
 dirs.each do |dir|
-  options = DIRS[dir]
+  options = DIRS[dir] or raise "Unknown library: pick one of #{DIR.keys.join(", ")}"
   command = "#{File.join(__dir__, "rdoc-tool")} annotate #{options.join(" ")} #{dir}/**/*.rbs"
   puts command
   system command
