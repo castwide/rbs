@@ -1,0 +1,446 @@
+#!/usr/bin/env ruby
+
+require "pathname"
+require "optparse"
+require "rdoc"
+require "rbs"
+
+# Paragraphs
+class Ps
+  attr_reader :items
+
+  def initialize(*items)
+    @items = items
+    @has_margin = false
+    @with_empty_line_at_end = false
+  end
+
+  def has_margin?
+    @has_margin
+  end
+
+  def margin!(has = true)
+    @has_margin = has
+    self
+  end
+
+  def with_empty_line_at_end?
+    @with_empty_line_at_end
+  end
+
+  def with_empty_line_at_end!(with = true)
+    @with_empty_line_at_end = with
+    self
+  end
+
+  def empty?
+    @items.empty?
+  end
+
+  def <<(item)
+    if item
+      @items << item
+    end
+    self
+  end
+
+  def to_s
+    to_str
+  end
+
+  def to_str
+    string = ""
+
+    items.each do |item|
+      case item
+      when Ps
+        string << item.to_s
+      when String
+        string << item
+      else
+        raise
+      end
+
+      string.rstrip!
+
+      next if string.empty?
+
+      string << "\n"
+      if has_margin?
+        string << "\n"
+      end
+    end
+
+    # Ensure there is one line break at end of the string
+    string.rstrip!
+
+    unless string.empty?
+      string << "\n"
+      # Add empty line at end of the string
+      if with_empty_line_at_end?
+        string << "\n"
+      end
+    end
+
+    string
+  end
+end
+
+class RDocHelper
+  attr_accessor :only_files
+  attr_accessor :docs_from
+
+  def initialize
+    @only_files = false
+  end
+
+  # Returns an array if document is found.
+  # Returns nil if given subject is not found.
+  #
+  def comment_for(subject)
+    case
+    when match = subject.match(/(?<constant_name>[^#]+)#(?<method_name>.+)/)
+      comment_for_method(match[:constant_name], instance_method: "#{match[:method_name]}")
+    when match = subject.match(/(?<constant_name>[^.]+)\.(?<method_name>.+)/)
+      comment_for_method(match[:constant_name], singleton_method: "#{match[:method_name]}")
+    else
+      comment_for_class(subject) || comment_for_constant(subject)
+    end
+  end
+
+  def comment_for_constant(name)
+    *class_components, const_name = name.split(/::/)
+    class_name = class_components.join("::")
+
+    stores = class_stores(class_name)
+
+    docs = stores.filter_map do |store|
+      if doc = store.load_class(class_name) || store.load_module(class_name)
+        doc.constants.find {|const| const.name == const_name }
+      end
+    end
+
+    unless docs.empty?
+      docs.each.with_object(Ps.new.margin!.with_empty_line_at_end!) do |doc, result|
+        format(doc.comment) {|p| result << p }
+      end
+    end
+  end
+
+  def comment_for_class(class_name)
+    stores = class_stores(class_name)
+
+    docs = stores.filter_map do |store|
+      store.load_class(class_name) || store.load_module(class_name) || false
+    end
+
+    unless docs.empty?
+      docs.each.with_object(Ps.new.margin!.with_empty_line_at_end!) do |doc, result|
+        comment = doc.comment
+
+        if comment.file
+          format(comment) {|p| result << p }
+        else
+          comment.each do |doc|
+            format(doc) {|p| result << p }
+          end
+        end
+      end
+    end
+  end
+
+  def comment_for_method(class_name, instance_method: nil, singleton_method: nil)
+    stores = class_stores(class_name)
+
+    if instance_method
+      methods = stores.filter_map do |store|
+        store.load_method(class_name, "##{instance_method}")
+      rescue RDoc::Store::MissingFileError
+        false
+      end
+    end
+
+    if singleton_method
+      methods = stores.filter_map do |store|
+        store.load_method(class_name, "::#{singleton_method}")
+      rescue RDoc::Store::MissingFileError
+        false
+      end
+    end
+
+    unless methods.empty?
+      methods.each.with_object(Ps.new.margin!.with_empty_line_at_end!) do |method, result|
+        format(method.comment) do |comment_ps|
+          unless comment_ps.empty?
+            result << comment_ps
+          end
+
+          arg_lists = Ps.new
+          if method.arglists
+            arg_lists << "<!--"
+            method.arglists.chomp.split("\n").each do |line|
+              arg_lists << "    #{line.strip}"
+            end
+            arg_lists << "-->"
+
+            unless arg_lists.empty?
+              result << arg_lists
+            end
+          end
+        end
+      end
+    end
+  end
+
+  def stores
+    @stores ||= begin
+      stores = []
+
+      RDoc::RI::Paths.each true, true, false, false do |path, type|
+        store = RDoc::RI::Store.new(path, type)
+        store.load_all
+        stores << store
+      end
+
+      stores
+    end
+  end
+
+  def class_stores(name)
+    stores.select do |store|
+      store.find_class_named(name) || store.find_module_named(name)
+    end
+  end
+
+  def skip_doc?(doc)
+    return false unless docs_from
+    return false unless doc.file
+
+    return false if docs_from == doc.file
+    return false if doc.file.start_with?(docs_from + File::SEPARATOR)
+
+    true
+  end
+
+  def format(doc)
+    return if skip_doc?(doc)
+
+    p = Ps.new()
+
+    formatter = RDoc::Markup::ToMarkdown.new
+    content_lines = doc.accept(formatter).lines.map(&:rstrip).join("\n")
+
+    unless content_lines.empty?
+      p << "<!-- #{doc.file} -->"
+
+      unless only_files
+        p << content_lines
+      end
+    end
+
+    if block_given?
+      yield p
+    else
+      p
+    end
+  end
+end
+
+def assign_comment(object)
+  comments = yield
+
+  if comments
+    unless comments.empty?
+      object.instance_variable_set(
+        :@comment,
+        RBS::AST::Comment.new(
+          location: nil,
+          string: comments.to_s
+        )
+      )
+    else
+      object.instance_variable_set(:@comment, nil)
+    end
+  end
+end
+
+def print_members(rdoc, klass_name, members)
+  members.each do |member|
+    comments = []
+
+    case member
+    when RBS::AST::Members::MethodDefinition
+      puts "    Processing #{member.name}..."
+
+      module_func_annotation = member.annotations.find {|a| a.string == "doc:module_function" }
+
+      if member.instance? || module_func_annotation
+        comments << rdoc.comment_for_method(klass_name.to_s, instance_method: member.name)
+      end
+
+      if comments.empty?
+        if member.instance? && member.name == :initialize
+          comments << rdoc.comment_for_method(klass_name.to_s, singleton_method: :new)
+        end
+      end
+
+      if member.singleton? || module_func_annotation
+        comments << rdoc.comment_for_method(klass_name.to_s, singleton_method: member.name)
+      end
+
+    when RBS::AST::Members::AttrReader, RBS::AST::Members::AttrAccessor, RBS::AST::Members::AttrWriter
+      puts "    👻 Attributes not supported (#{klass_name})"
+    when RBS::AST::Members::Alias
+      puts "    Processing #{member.new_name}(alias)..."
+
+      case
+      when member.instance?
+        comments << rdoc.comment_for_method(klass_name.to_s, instance_method: member.new_name)
+      when member.singleton?
+        comments << rdoc.comment_for_method(klass_name.to_s, singleton_method: member.new_name)
+      end
+
+      if comments.empty?
+        case
+        when member.instance?
+          comments << rdoc.comment_for_method(klass_name.to_s, instance_method: member.old_name)
+        when member.singleton?
+          comments << rdoc.comment_for_method(klass_name.to_s, singleton_method: member.old_name)
+        end
+      end
+    end
+
+    if !comments.empty? && comments.all?(&:nil?)
+      assign_comment(member) do
+        Ps.new(*comments.compact)
+      end
+    end
+  end
+end
+
+
+def annotate_declaration(decl:, outer:, rdoc:)
+  case decl
+  when RBS::AST::Declarations::Constant
+    puts "  Importing documentation for #{decl.name} constant..."
+    const_name = resolve_name(decl.name, outer: outer)
+
+    comments = rdoc.comment_for_constant(const_name.to_s)
+    assign_comment(decl) do
+      comments
+    end
+
+  when RBS::AST::Declarations::Class, RBS::AST::Declarations::Module
+    class_name = resolve_name(decl.name, outer: outer)
+
+    puts "  Importing documentation for #{class_name} class/module..."
+    comments = rdoc.comment_for_class(class_name.to_s)
+
+    assign_comment(decl) do
+      comments
+    end
+
+    print_members(rdoc, class_name, decl.members)
+
+    outer_ = outer + [decl.name.to_namespace]
+    decl.members.each do |member|
+      annotate_declaration(decl: member, outer: outer_, rdoc: rdoc)
+    end
+  end
+end
+
+def resolve_name(name, outer:)
+  namespace = outer.inject(RBS::Namespace.root) do |ns1, ns2|
+    ns1 + ns2
+  end
+
+  name.with_prefix(namespace).relative!
+end
+
+rdoc = RDocHelper.new()
+
+case ARGV.shift
+when "annotate"
+  OptionParser.new do |opts|
+    opts.on("--only-files") do
+      rdoc.only_files = true
+    end
+    opts.on("--docs-from=PATH") do |path|
+      rdoc.docs_from = path
+    end
+  end.parse!(ARGV)
+
+  ARGV.each do |arg|
+    path = Pathname(arg)
+
+    buffer = RBS::Buffer.new(name: path, content: path.read)
+    sigs = RBS::Parser.parse_signature(buffer)
+
+    sigs.each do |decl|
+      annotate_declaration(decl: decl, outer: [], rdoc: rdoc)
+    end
+
+    puts "Writing #{path}..."
+    path.open('w') do |out|
+      writer = RBS::Writer.new(out: out)
+      writer.write sigs
+    end
+  end
+
+when "query"
+  OptionParser.new do |opts|
+    opts.on("--only-files") do
+      rdoc.only_files = true
+    end
+    opts.on("--docs-from=PATH") do |path|
+      rdoc.docs_from = path
+    end
+  end.parse!(ARGV)
+
+  if d = rdoc.comment_for(ARGV[0])
+    print d.to_s
+  else
+    STDERR.puts "No doc found"
+  end
+when "test"
+  require "test/unit"
+
+  class PsTest < Test::Unit::TestCase
+    def test_no_margin
+      ps = Ps.new("hello", "world", "This ", "is\n", "a pen").with_empty_line_at_end!
+      assert_equal(<<TEXT, ps.to_s)
+hello
+world
+This
+is
+a pen
+
+TEXT
+    end
+
+    def test_with_margin
+      ps = Ps.new("hello", "world", "This ", "is\n", "a pen").margin!
+      assert_equal(<<TEXT, ps.to_s)
+hello
+
+world
+
+This
+
+is
+
+a pen
+TEXT
+    end
+  end
+else
+  puts "bin/rdoc-tool query [opts] SUBJECT"
+  puts "  Prints RDoc of *SUBJECT* in Markdown format"
+  puts
+  puts "  SUBJECT ::= ClassName         (class, module, or constant)"
+  puts "            | ClassName.method  (singleton method)"
+  puts "            | ClassName#method  (instance method)"
+  puts
+  puts "bin/rdoc-tool annotate [opts] RBS_FILES..."
+  puts "  Update given RBS files with RDoc comments"
+end

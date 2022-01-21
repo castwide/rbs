@@ -1,0 +1,23 @@
+#!/usr/bin/env ruby
+
+DIRS = {
+  "stdlib/pathname" => ["--docs-from=ext/pathname"]
+}
+
+# Usage:
+#   bin/update_all_docs stdlib/pathname
+#   bin/update_all_docs
+
+dirs =
+  unless ARGV.empty?
+    ARGV
+  else
+    DIRS.keys
+  end
+
+dirs.each do |dir|
+  options = DIRS[dir]
+  command = "#{File.join(__dir__, "rdoc-tool")} annotate #{options.join(" ")} #{dir}/**/*.rbs"
+  puts command
+  system command
+end
