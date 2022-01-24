@@ -13,6 +13,7 @@ add_lib("stdlib/bigdecimal", "ext/bigdecimal")
 add_lib("stdlib/bigdecimal-math")
 add_lib("stdlib/cgi")
 add_lib("stdlib/coverage")
+add_lib("stdlib/csv")
 
 # Usage:
 #   bin/update_all_docs stdlib/pathname

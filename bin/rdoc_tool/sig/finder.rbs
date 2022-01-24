@@ -1,0 +1,13 @@
+module RDocTool
+  class Finder
+    type store = untyped
+
+    def initialize: (stores: Array[store]) -> void
+
+    def comment_for_constant: (String name, from: Array[String]) -> Array[Paragraph]?
+
+    def comment_for_class: (String name, from: Array[String]) -> Array[Paragraph]?
+
+    def comment_for_method: (String name, from: Array[String]) -> Array[Paragraph]?
+  end
+end

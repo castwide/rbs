@@ -6,85 +6,7 @@ require "rdoc"
 require "rbs"
 
 # Paragraphs
-class Ps
-  attr_reader :items
 
-  def initialize(*items)
-    @items = items
-    @has_margin = false
-    @with_empty_line_at_end = false
-  end
-
-  def has_margin?
-    @has_margin
-  end
-
-  def margin!(has = true)
-    @has_margin = has
-    self
-  end
-
-  def with_empty_line_at_end?
-    @with_empty_line_at_end
-  end
-
-  def with_empty_line_at_end!(with = true)
-    @with_empty_line_at_end = with
-    self
-  end
-
-  def empty?
-    @items.empty?
-  end
-
-  def <<(item)
-    if item
-      @items << item
-    end
-    self
-  end
-
-  def to_s
-    to_str
-  end
-
-  def to_str
-    string = ""
-
-    items.each do |item|
-      case item
-      when Ps
-        string << item.to_s
-      when String
-        string << item
-      else
-        raise
-      end
-
-      string.rstrip!
-
-      next if string.empty?
-
-      string << "\n"
-      if has_margin?
-        string << "\n"
-      end
-    end
-
-    # Ensure there is one line break at end of the string
-    string.rstrip!
-
-    unless string.empty?
-      string << "\n"
-      # Add empty line at end of the string
-      if with_empty_line_at_end?
-        string << "\n"
-      end
-    end
-
-    string
-  end
-end
 
 class RDocHelper
   attr_accessor :only_files
@@ -115,7 +37,7 @@ class RDocHelper
     stores = class_stores(class_name)
 
     docs = stores.filter_map do |store|
-      if doc = store.load_class(class_name) || store.load_module(class_name)
+      if doc = store.find_class_or_module(class_name)
         doc.constants.find {|const| const.name == const_name }
       end
     end
@@ -131,7 +53,7 @@ class RDocHelper
     stores = class_stores(class_name)
 
     docs = stores.filter_map do |store|
-      store.load_class(class_name) || store.load_module(class_name) || false
+      store.find_class_or_module(class_name) || false
     end
 
     unless docs.empty?
@@ -154,7 +76,8 @@ class RDocHelper
 
     if instance_method
       methods = stores.filter_map do |store|
-        store.load_method(class_name, "##{instance_method}")
+        klass = store.find_class_or_module(class_name)
+        klass.method_list.find {|m| m.name == instance_method && !m.singleton } || false
       rescue RDoc::Store::MissingFileError
         false
       end
@@ -162,7 +85,8 @@ class RDocHelper
 
     if singleton_method
       methods = stores.filter_map do |store|
-        store.load_method(class_name, "::#{singleton_method}")
+        klass = store.find_class_or_module(class_name)
+        klass.method_list.find {|m| m.name == singleton_method && m.singleton } || false
       rescue RDoc::Store::MissingFileError
         false
       end
@@ -272,24 +196,48 @@ def print_members(rdoc, klass_name, members)
     when RBS::AST::Members::MethodDefinition
       puts "    Processing #{member.name}..."
 
-      module_func_annotation = member.annotations.find {|a| a.string == "doc:module_function" }
+      if member.instance? && member.singleton?
+        # Module function!
+        comments = []
 
-      if member.instance? || module_func_annotation
-        comments << rdoc.comment_for_method(klass_name.to_s, instance_method: member.name)
-      end
+        if comment = rdoc.comment_for_method(klass_name.to_s, instance_method: member.name)
+          comments << comment
+        end
 
-      if comments.empty?
-        if member.instance? && member.name == :initialize
-          comments << rdoc.comment_for_method(klass_name.to_s, singleton_method: :new)
+        if comments.empty?
+          if comment = rdoc.comment_for_method(klass_name.to_s, singleton_method: member.name)
+            comments << comment
+          end
+        end
+      else
+        if member.instance?
+          comments << rdoc.comment_for_method(klass_name.to_s, instance_method: member.name)
+        end
+
+        if comments.empty?
+          if member.instance? && member.name == :initialize
+            comments << rdoc.comment_for_method(klass_name.to_s, singleton_method: :new)
+          end
+        end
+
+        if member.singleton?
+          comments << rdoc.comment_for_method(klass_name.to_s, singleton_method: member.name)
         end
       end
 
-      if member.singleton? || module_func_annotation
+    when RBS::AST::Members::AttrReader
+      puts "    Processing #{member.name}(attr_reader)..."
+
+      case
+      when member.kind == :instance
+        comments << rdoc.comment_for_method(klass_name.to_s, instance_method: member.name)
+      when member.kind == :singleton
         comments << rdoc.comment_for_method(klass_name.to_s, singleton_method: member.name)
       end
 
-    when RBS::AST::Members::AttrReader, RBS::AST::Members::AttrAccessor, RBS::AST::Members::AttrWriter
-      puts "    👻 Attributes not supported (#{klass_name})"
+    when RBS::AST::Members::AttrAccessor, RBS::AST::Members::AttrWriter
+      puts "    👻 Attributes not supported (#{klass_name}##{member.name})"
+
     when RBS::AST::Members::Alias
       puts "    Processing #{member.new_name}(alias)..."
 
@@ -310,10 +258,14 @@ def print_members(rdoc, klass_name, members)
       end
     end
 
-    if !comments.empty? && comments.all?(&:nil?)
-      assign_comment(member) do
-        Ps.new(*comments.compact)
+    assign_comment(member) do
+      unless comments.empty?
+        if comments.all?(&:nil?)
+          next nil
+        end
       end
+
+      Ps.new(*comments.compact)
     end
   end
 end
@@ -400,7 +352,7 @@ when "query"
   if d = rdoc.comment_for(ARGV[0])
     print d.to_s
   else
-    STDERR.puts "No doc found"
+    STDERR.puts "No entry found"
   end
 when "test"
   require "test/unit"

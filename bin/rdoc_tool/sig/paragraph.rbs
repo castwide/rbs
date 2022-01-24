@@ -1,0 +1,31 @@
+module RDocTool
+  class Paragraph
+    type item = String | Paragraph
+
+    @has_margin: bool
+
+    @with_empty_line_at_end: bool
+
+    attr_reader items: Array[item]
+
+    def initialize: (*item) -> void
+
+    def has_margin?: () -> bool
+
+    def margin!: (?bool) -> self
+
+    def with_empty_line_at_end?: () -> bool
+
+    def empty_line_at_end!: (?bool) -> self
+
+    def <<: (item) -> self
+
+    def to_s: () -> String
+
+    def to_str: () -> String
+
+    def size: () -> Integer
+
+    def empty?: () -> bool
+  end
+end

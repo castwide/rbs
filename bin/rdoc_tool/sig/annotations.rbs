@@ -1,0 +1,41 @@
+module RDocTool
+  module Annotations
+    def self.parse: (String) -> (Skip | Source)
+
+    # Skip annotation allows skipping generating annotation of a subject.
+    #
+    #     %a{rdoc-tool:skip}
+    #     %a{rdoc-tool:skip:all}
+    #
+    class Skip
+      attr_reader include_children: bool
+
+      def initialize: (include_children: bool) -> void
+    end
+
+    # Source annotation allows where the documents are copied from.
+    #
+    # It allows specifying two directions: the source to read from, and the source to skip.
+    #
+    #     %a{rdoc-tool:source:from=ext/pathname}
+    #     %a{rdoc-tool:source:skip=ext/pathname/doc}
+    #
+    # When you want to specify several paths, repeat writing annotations.
+    #
+    class Source
+      attr_reader valid_sources: Array[String]
+      attr_reader reject_sources: Array[String]
+
+      def initialize: () -> void
+    end
+
+    # Copy annotation allows copying the doc from another subject.
+    # This helps working with incorrect RDoc annotations.
+    #
+    #     %a{rdoc-tool:copy:Bar#baz}
+    #     %a{rdoc-tool:copy:Bar::bar}
+    #
+    class Copy
+    end
+  end
+end
